@@ -3,7 +3,7 @@ require 'brewkit'
 # some credit to http://github.com/maddox/magick-installer
 
 class Imagemagick <Formula
-  @url='ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick-6.5.6-5.tar.gz'
+  @url='http://image_magick.veidrodis.com/image_magick/ImageMagick-6.5.6-5.tar.gz'
   @md5='668919a5a7912fb6778975bc55893004'
   @homepage='http://www.imagemagick.org'
 
@@ -12,6 +12,10 @@ class Imagemagick <Formula
   depends_on 'libtiff' => :optional
   depends_on 'little-cms' => :optional
   depends_on 'ghostscript' => :recommended
+
+  def skip_clean? path
+    path.extname == '.la'
+  end
 
   def install
     ENV.libpng

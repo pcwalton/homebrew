@@ -35,13 +35,20 @@ require 'hardware'
 
 ENV['MACOSX_DEPLOYMENT_TARGET']=MACOS_VERSION.to_s
 
-# ignore existing build vars, thus we should have less bugs to deal with
-ENV['LDFLAGS'] = ''
-ENV['CPPFLAGS'] = ''
+unless HOMEBREW_PREFIX.to_s == '/usr/local'
+  # /usr/local is always in the build system path so only add other paths
+  ENV['CPPFLAGS'] = "-I#{HOMEBREW_PREFIX}/include"
+  ENV['LDFLAGS'] = "-L#{HOMEBREW_PREFIX}/lib"
+else
+  # ignore existing build vars, thus we should have less bugs to deal with
+  ENV['CPPFLAGS'] = ''
+  ENV['LDFLAGS'] = ''
+end
 
 if MACOS_VERSION >= 10.6 or ENV['HOMEBREW_USE_LLVM']
-  ENV['CC']  = '/Developer/usr/llvm-gcc-4.2/bin/llvm-gcc-4.2'
-  ENV['CXX'] = '/Developer/usr/llvm-gcc-4.2/bin/llvm-g++-4.2'
+  ENV['PATH'] = "/Developer/usr/llvm-gcc-4.2/bin:#{ENV['PATH']}"
+  ENV['CC'] = 'llvm-gcc-4.2'
+  ENV['CXX'] = 'llvm-g++-4.2'
   cflags = ['-O4'] # O4 baby!
 else
   ENV['CC']="gcc-4.2"
@@ -93,12 +100,6 @@ ENV['CFLAGS']=ENV['CXXFLAGS']="#{cflags*' '} #{BREWKIT_SAFE_FLAGS}"
 # compile faster
 ENV['MAKEFLAGS']="-j#{Hardware.processor_count}"
 
-# /usr/local is always in the build system path
-unless HOMEBREW_PREFIX.to_s == '/usr/local'
-  ENV['CPPFLAGS']="-I#{HOMEBREW_PREFIX}/include"
-  ENV['LDFLAGS']="-L#{HOMEBREW_PREFIX}/lib"
-end
-
 
 # you can use these functions for packages that have build issues
 module HomebrewEnvExtension
@@ -126,6 +127,12 @@ module HomebrewEnvExtension
     # Sometimes O4 just takes fucking forever
     remove_from_cflags '-O4'
     append_to_cflags '-O3'
+  end
+  def O2
+    # Sometimes O3 doesn't work or produces bad binaries
+    remove_from_cflags '-O4'
+    remove_from_cflags '-O3'
+    append_to_cflags '-O2'
   end
   def gcc_4_2
     # Sometimes you want to downgrade from LLVM to GCC 4.2
