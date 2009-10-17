@@ -29,15 +29,13 @@ def __make url, name
   path = Formula.path name
   raise "#{path} already exists" if path.exist?
 
-  homepage = `osascript -e 'tell application "Safari" to if running then get URL of document of first window'`.chomp
-
   template=<<-EOS
-            require 'brewkit'
+            require 'formula'
 
             class #{Formula.class_s name} <Formula
               url '#{url}'
+              homepage ''
               md5 ''
-              homepage '#{homepage}'
 
   cmake       depends_on 'cmake'
 
@@ -104,17 +102,21 @@ def make url
     end
   end
 
-  case name
+  force_text = "If you really want to make this formula use --force."
+
+  case name.downcase
   when /libxml/, /libxlst/, /freetype/, /libpng/
     raise <<-EOS
 #{name} is blacklisted for creation
 Apple distributes this library with OS X, you can find it in /usr/X11/lib.
 However not all build scripts look here, so you may need to call ENV.x11 or
 ENV.libxml2 in your formula's install function.
+
+#{force_text}
     EOS
-  when 'mercurial'
-    raise "Mercurial is blacklisted for creation because it is provided by easy_install"
-  end
+  when 'mercurial', 'scons'
+    raise "#{name} is blacklisted for creation because it is provided by easy_install.\n\n#{force_text}"
+  end unless ARGV.force?
 
   __make url, name
 end

@@ -5,8 +5,10 @@
 
 ABS__FILE__=File.expand_path(__FILE__)
 
-$:.unshift File.dirname(ABS__FILE__)
-require 'pathname+yeast'
+$:.unshift File.dirname(ABS__FILE__)+'/..'
+require 'extend/pathname'
+require 'utils'
+require 'hardware'
 require 'formula'
 require 'download_strategy'
 require 'keg'
@@ -29,7 +31,8 @@ Dir.chdir HOMEBREW_PREFIX
 at_exit { HOMEBREW_PREFIX.parent.rmtree }
 
 require 'test/unit' # must be after at_exit
-require 'ARGV+yeast' # needs to be after test/unit to avoid conflict with OptionsParser
+require 'extend/ARGV' # needs to be after test/unit to avoid conflict with OptionsParser
+ARGV.extend(HomebrewArgvExtension)
 
 
 class MockFormula <Formula
@@ -135,7 +138,7 @@ module ExtendArgvPlusYeast
     @named=nil
     @formulae=nil
     @kegs=nil
-    while ARGV.count > 0
+    while ARGV.length > 0
       ARGV.shift
     end
   end
@@ -365,7 +368,7 @@ class BeerTasting <Test::Unit::TestCase
     path.dirname.mkpath
     File.open(path, 'w') do |f|
       f << %{
-        require 'brewkit'
+        require 'formula'
         class #{classname} < Formula
           @url=''
           def initialize(*args)
@@ -473,10 +476,10 @@ class BeerTasting <Test::Unit::TestCase
   def test_arch_for_command
     arches=arch_for_command '/usr/bin/svn'
     if `sw_vers -productVersion` =~ /10\.(\d+)/ and $1.to_i >= 6
-      assert_equal 3, arches.count
+      assert_equal 3, arches.length
       assert arches.include?(:x86_64)
     else
-      assert_equal 2, arches.count
+      assert_equal 2, arches.length
     end
     assert arches.include?(:i386)
     assert arches.include?(:ppc7400)
@@ -630,7 +633,7 @@ end
 
 __END__
 update_git_pull_output_without_formulae_changes: |
-  remote: Counting objects: 58, done.
+  remote: counting objects: 58, done.
   remote: Compressing objects: 100% (35/35), done.
   remote: Total 39 (delta 20), reused 0 (delta 0)
   Unpacking objects: 100% (39/39), done.
@@ -650,7 +653,7 @@ update_git_pull_output_without_formulae_changes: |
    delete mode 100644 Library/Homebrew/hw.model.c
    delete mode 100644 Library/Homebrew/hw.model.rb
 update_git_pull_output_with_formulae_changes: |
-  remote: Counting objects: 58, done.
+  remote: counting objects: 58, done.
   remote: Compressing objects: 100% (35/35), done.
   remote: Total 39 (delta 20), reused 0 (delta 0)
   Unpacking objects: 100% (39/39), done.

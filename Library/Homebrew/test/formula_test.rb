@@ -3,14 +3,11 @@
 # support, and with no warranty, express or implied, as to its usefulness for
 # any purpose.
 
-$:.unshift File.dirname(__FILE__)
+$:.unshift File.dirname(__FILE__)+'/..'
 require 'test/unit'
 require 'global'
-require 'pathname+yeast'
 require 'formula'
 require 'utils'
-
-require 'ARGV+yeast' # needs to be after test/unit to avoid conflict with OptionsParser
 
 
 # NOTE duplicated in unittest.rb (we need to refactor the tests anyway)
@@ -38,6 +35,15 @@ class FormulaNames <Test::Unit::TestCase
           Formula.factory f
         end
       end
+    end
+  end
+end
+
+class CommentedTemplateCode <Test::Unit::TestCase
+  def test_for_commented_out_cmake
+    Dir["#{HOMEBREW_PREFIX}/Library/Formula/*.rb"].each do |f|
+      result = `grep "# depends_on 'cmake'" "#{f}"`.strip
+      assert_equal('', result, "Commented template code still in #{f}")
     end
   end
 end

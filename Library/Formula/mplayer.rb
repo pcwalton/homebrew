@@ -1,14 +1,14 @@
-require 'brewkit'
+require 'formula'
 
 class Mplayer <Formula
   @homepage='http://www.mplayerhq.hu/'
   @head='svn://svn.mplayerhq.hu/mplayer/trunk'
+  
+  depends_on 'pkg-config' => :recommended
 
   def install
-    # Information from http://blog.bloople.net/read/mplayer-on-snow-leopard
-    # seems to claim that we have to build against an x86_64 target even if on
-    # i386 /-:
-    system "./configure --prefix='#{prefix}' --target=x86_64-Darwin"
+    ENV.gcc_4_2   # llvm chokes on labels within mlp inline asm
+    system "./configure --prefix='#{prefix}'"
     system "make"
     system "make install"
   end

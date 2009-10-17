@@ -1,4 +1,4 @@
-require 'brewkit'
+require 'formula'
 
 class Icu4c <Formula
   @url='http://download.icu-project.org/files/icu4c/4.3.1/icu4c-4_3_1-src.tgz'
@@ -20,8 +20,10 @@ class Icu4c <Formula
     end
   end
   
-  def caveats
-    "ICU doesn't like to build on Snow Leopard with all the heavy CFLAG optimizations, primarily -O3. You may need to change your brewkit environment flags to get it to build on Snow Leopard."
+  def caveats; <<-EOS
+ICU doesn't like to build on Snow Leopard with all the heavy CFLAG
+optimizations, primarily -O4. Try ENV.O3 in the install function
+    EOS
   end
 end
 

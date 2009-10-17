@@ -1,13 +1,19 @@
 #!/usr/bin/ruby
 require 'global'
-require 'formula'
-require 'keg'
+
 require 'brew.h'
+require 'extend/ENV'
+require 'fileutils'
+require 'formula'
+require 'hardware'
+require 'keg'
 
 show_summary_heading = false
 
 def text_for_keg_only_formula f
-  if f.keg_only?.kind_of? String
+  if f.keg_only? == :provided_by_osx
+    rationale = "This because the formula is already provided by OS X."
+  elsif f.keg_only?.kind_of? String
     rationale = "The formula provides the following rationale:\n\n#{f.keg_only?.chomp}"
   else
     rationale = "The formula didn't provide any rationale for this."
@@ -25,23 +31,25 @@ EOS
 end
 
 
-def ENV_prepend key, value, separator = ' '
-  if ENV[key] and not ENV[key].empty?
-    ENV[key] = value+separator+ENV[key]
-  else
-    ENV[key] = value
-  end
-end
-
-
 def install f
+  # we deliberately only do this when install is run, although it may be the wrong decision…
+  ENV.extend(HomebrewEnvExtension)
+  ENV.setup_build_environment
+  
   f.deps.each do |dep|
     dep = Formula.factory dep
     if dep.keg_only?
-      ENV_prepend 'LDFLAGS', "-L#{dep.lib}"
-      ENV_prepend 'CPPFLAGS', "-I#{dep.include}"
-      ENV_prepend 'PATH', "#{dep.bin}", ':'
-      ENV_prepend 'PKG_CONFIG_PATH', dep.lib+'pkgconfig', ':'
+      ENV.prepend 'LDFLAGS', "-L#{dep.lib}"
+      ENV.prepend 'CPPFLAGS', "-I#{dep.include}"
+      ENV.prepend 'PATH', "#{dep.bin}", ':'
+      ENV.prepend 'PKG_CONFIG_PATH', dep.lib+'pkgconfig', ':'
+    end
+  end
+
+  if ARGV.verbose?
+    ohai "Build Environment"
+    %w[PATH CFLAGS LDFLAGS CPPFLAGS MAKEFLAGS CC CXX MACOSX_DEPLOYMENT_TARGET].each do |env|
+      puts "#{env}: #{ENV[env]}" unless ENV[env].to_s.empty?
     end
   end
 
