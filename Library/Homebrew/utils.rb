@@ -47,7 +47,7 @@ end
 
 # args are additional inputs to puts until a nil arg is encountered
 def ohai title, *sput
-  title = title[0, `/usr/bin/tput cols`.strip.to_i-4] unless ARGV.verbose?
+  title = title.to_s[0, `/usr/bin/tput cols`.strip.to_i-4] unless ARGV.verbose?
   puts "#{Tty.blue}==>#{Tty.white} #{title}#{Tty.reset}"
   puts *sput unless sput.empty?
 end
@@ -69,30 +69,29 @@ def pretty_duration s
 end
 
 def interactive_shell
-  pid=fork
-  if pid.nil?
+  fork do
     # TODO make the PS1 var change pls
     #brown="\[\033[0;33m\]"
     #reset="\[\033[0m\]"
     #ENV['PS1']="Homebrew-#{HOMEBREW_VERSION} #{brown}\W#{reset}\$ "
     exec ENV['SHELL']
   end
-  Process.wait pid
-  raise SystemExit, "Aborting due to non-zero exit status" if $? != 0
+  Process.wait
+  unless $?.success?
+    puts "Aborting due to non-zero exit status"
+    exit $?
+  end
 end
 
 # Kernel.system but with exceptions
 def safe_system cmd, *args
   puts "#{cmd} #{args*' '}" if ARGV.verbose?
-  exec_success = Kernel.system cmd, *args
-  # some tools, eg. tar seem to confuse ruby and it doesn't propogate the
-  # CTRL-C interrupt to us too, so execution continues, but the exit code os
-  # still 2 so we raise our own interrupt
-  raise Interrupt, cmd if $?.termsig == 2
-  unless exec_success
-    puts "Exit code: #{$?}"
-    raise ExecutionError.new(cmd, args)
-  end 
+  fork do
+    trap("EXIT") {} # no bt on exit from this short-lived fork
+    exit! 1 unless exec(cmd, *args)
+  end
+  Process.wait
+  raise ExecutionError.new(cmd, args, $?) unless $?.success?
 end
 
 def curl *args
@@ -146,16 +145,32 @@ def arch_for_command cmd
     return archs
 end
 
-
 # replaces before with after for the file path
 def inreplace path, before, after
-  before=Regexp.escape before.to_s
-  before.gsub! "/", "\\/" # I guess not escaped as delimiter varies
-  after=after.to_s
-  after.gsub! "\\", "\\\\"
-  after.gsub! "/", "\\/"
-  after.gsub! "$", "\\$"
+  f = File.open(path, 'r')
+  o = f.read.gsub(before, after)
+  f.reopen(path, 'w').write(o)
+  f.close
+end
 
-  # FIXME use proper Ruby for teh exceptions!
-  safe_system "/usr/bin/perl", "-pi", "-e", "s/#{before}/#{after}/g", path
+def ignore_interrupts
+  std_trap = trap("INT") {}
+  yield
+ensure
+  trap("INT", std_trap)
+end
+
+def nostdout
+  if ARGV.verbose?
+    yield
+  else
+    begin
+      require 'stringio'
+      real_stdout = $stdout
+      $stdout = StringIO.new
+      yield
+    ensure
+      $stdout = real_stdout
+    end
+  end
 end

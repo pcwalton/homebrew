@@ -48,7 +48,7 @@ class CurlDownloadStrategy <AbstractDownloadStrategy
         raise
       end
     else
-      puts "File already downloaded and cached"
+      puts "File already downloaded and cached to #{HOMEBREW_CACHE}"
     end
     return @dl # thus performs checksum verification
   end
@@ -111,7 +111,16 @@ class SubversionDownloadStrategy <AbstractDownloadStrategy
     ohai "Checking out #{@url}"
     @co=HOMEBREW_CACHE+@unique_token
     unless @co.exist?
-      safe_system '/usr/bin/svn', 'checkout', @url, @co
+      checkout_args = ['/usr/bin/svn', 'checkout', @url]
+      
+      if (@spec == :revision) and @ref
+        checkout_args << '-r'
+        checkout_args << @ref
+      end
+
+      checkout_args << @co
+
+      safe_system *checkout_args
     else
       # TODO svn up?
       puts "Repository already checked out"
@@ -131,7 +140,7 @@ class GitDownloadStrategy <AbstractDownloadStrategy
       safe_system 'git', 'clone', @url, @clone
     else
       # TODO git pull?
-      puts "Repository already cloned"
+      puts "Repository already cloned to #{@clone}"
     end
   end
   def stage
@@ -141,9 +150,9 @@ class GitDownloadStrategy <AbstractDownloadStrategy
         ohai "Checking out #{@spec} #{@ref}"
         case @spec
         when :branch
-          safe_system 'git', 'checkout', '-b', @ref, "origin/#{@ref}"
+          nostdout { safe_system 'git', 'checkout', "origin/#{@ref}" }
         when :tag
-          safe_system 'git', 'checkout', @ref
+          nostdout { safe_system 'git', 'checkout', @ref }
         end
       end
       # http://stackoverflow.com/questions/160608/how-to-do-a-git-export-like-svn-export
