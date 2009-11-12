@@ -28,6 +28,7 @@ class Tty
     def red; underline 31; end
     def yellow; underline 33 ; end
     def reset; escape 0; end
+    def em; underline 39; end
     
   private
     def color n
@@ -87,8 +88,8 @@ end
 def safe_system cmd, *args
   puts "#{cmd} #{args*' '}" if ARGV.verbose?
   fork do
-    trap("EXIT") {} # no bt on exit from this short-lived fork
-    exit! 1 unless exec(cmd, *args)
+    exec(cmd, *args) rescue nil
+    exit! 1 # never gets here unless exec failed
   end
   Process.wait
   raise ExecutionError.new(cmd, args, $?) unless $?.success?

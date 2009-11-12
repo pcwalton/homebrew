@@ -51,29 +51,26 @@ def dump_config
     Hardware.processor_count
   end
   llvm = llvm_build
+  sha = `git rev-parse --verify HEAD`.chomp
+  kernel_arch = `uname -m`.chomp
 
   puts <<-EOS
 HOMEBREW_VERSION: #{HOMEBREW_VERSION}
+HEAD: #{sha}
 HOMEBREW_PREFIX: #{HOMEBREW_PREFIX}
 HOMEBREW_CELLAR: #{HOMEBREW_CELLAR}
 HOMEBREW_CACHE: #{HOMEBREW_CACHE}
 HOMEBREW_REPOSITORY: #{HOMEBREW_REPOSITORY}
-Library path: #{$:.first}
+Library Path: #{$:.first}
 Hardware: #{cores}-core #{bits}-bit #{Hardware.intel_family}
 OS X: #{MACOS_FULL_VERSION}
+Kernel Architecture: #{kernel_arch}
 Ruby: #{RUBY_VERSION}-#{RUBY_PATCHLEVEL}
-GCC: build #{gcc_build}
+GCC: 4.2 build #{gcc_build}
 LLVM: #{llvm ? "build #{llvm}" : "N/A" }
+MacPorts or Fink? #{macports_or_fink_installed?}
 EOS
 end
-
-def please_report_bug; <<-EOS
-Please report this bug to #{HOMEBREW_WWW}
-Mac OS X: #{MACOS_FULL_VERSION}
-Ponk: #{macports_or_fink_installed?}
-  EOS
-end
-
 
 begin
   require 'brew.h'
@@ -211,7 +208,7 @@ begin
     if MACOS_VERSION >= 10.6
       opoo "You should upgrade to Xcode 3.2.1" if llvm_build < 2206
     else
-      opoo "You should upgrade to Xcode 3.1" if gcc_build < 5577
+      opoo "You should upgrade to Xcode 3.1.4" if gcc_build < 5577
     end
 
     if macports_or_fink_installed?
@@ -241,37 +238,28 @@ begin
   end
 
 rescue FormulaUnspecifiedError
-  puts "This command requires a formula argument"
-  exit 1
+  abort "This command requires a formula argument"
 rescue KegUnspecifiedError
-  puts "This command requires a keg argument"
-  exit 1
+  abort "This command requires a keg argument"
 rescue UsageError
   onoe "Invalid usage"
-  puts ARGV.usage
-  exit 1
+  abort ARGV.usage
 rescue SystemExit
   puts "Kernel.exit" if ARGV.verbose?
-  exit 1
+  raise
 rescue Interrupt => e
   puts # seemingly a newline is typical
   exit 130
-rescue SystemCallError, RuntimeError => e
-  if ARGV.debug?
-    onoe e.inspect
-    puts e.backtrace
-  else
-    onoe e
-    if e.kind_of? BuildError
-      puts please_report_bug
-      puts "Exit Status: #{e.status}"
-    end
-  end
-  exit 1
 rescue Exception => e
-  onoe "Homebrew has failed you :("
-  puts please_report_bug
-  puts e.inspect
-  puts e.backtrace
+  fatal = !(RuntimeError === e or SystemCallError === e)
+
+  onoe e
+  if BuildError === e or fatal
+    puts "#{Tty.white}Please report this bug to #{Tty.em}#{HOMEBREW_WWW}#{Tty.reset}"
+    dump_config
+    puts "Exit status: #{e.status}" if BuildError === e
+  end
+  puts e.backtrace if fatal or ARGV.debug?
+
   exit 1
 end
