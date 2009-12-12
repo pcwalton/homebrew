@@ -100,6 +100,8 @@ begin
       end
 
     when 'search', '-S'
+      check_for_blacklisted_formula(ARGV.named)
+
       require "formula"
       formulae = Formulary.names with_aliases=true
 
@@ -130,7 +132,8 @@ begin
         exec_editor *paths
       end
 
-    when 'up', 'update'
+  when 'up', 'update'
+    if system "/usr/bin/which -s git"
       require 'update'
       updater = RefreshBrew.new
       old_revision = updater.current_revision
@@ -145,6 +148,9 @@ begin
           puts "No formulae were updated." unless updater.pending_formulae_changes?
         end
       end
+    else
+      abort "Please `brew install git' first."
+    end
 
     when 'ln', 'link'
       ARGV.kegs.each {|keg| puts "#{keg.link} links created for #{keg}"}
@@ -199,6 +205,8 @@ begin
       end
 
   when 'install'
+    check_for_blacklisted_formula(ARGV.named)
+    
     require 'formula_installer'
     require 'hardware'
 
@@ -307,7 +315,8 @@ rescue Interrupt => e
   puts # seemingly a newline is typical
   exit 130
 rescue BuildError => e
-  puts e.backtrace[1]
+  e.backtrace[1] =~ %r{Library/Formula/(.+)\.rb:(\d+)}
+  puts "http://github.com/mxcl/homebrew/blob/master/Library/Formula/#{$1}.rb#L#{$2}"
   ohai "Environment"
   dump_config
   puts "Exit status: #{e.status.exitstatus}"
