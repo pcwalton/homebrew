@@ -21,7 +21,7 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-FORMULA_META_FILES = %w[README ChangeLog COPYING LICENSE COPYRIGHT AUTHORS]
+FORMULA_META_FILES = %w[README README.md ChangeLog COPYING LICENSE COPYRIGHT AUTHORS]
 PLEASE_REPORT_BUG = "#{Tty.white}Please report this bug at #{Tty.em}http://github.com/mxcl/homebrew/issues#{Tty.reset}"
 
 def check_for_blacklisted_formula names
@@ -198,7 +198,7 @@ def info name
     puts
   end
 
-  history = github_info
+  history = github_info(name)
   puts history if history
 
 rescue FormulaUnavailableError
@@ -212,6 +212,28 @@ rescue FormulaUnavailableError
   end
 end
 
+def issues_for_formula name
+  # bit basic as depends on the issue at github having the exact name of the
+  # formula in it. Which for stuff like objective-caml is unlikely. So we
+  # really should search for aliases too.
+
+  name = f.name if Formula === name
+
+  require 'open-uri'
+  require 'yaml'
+
+  issues = []
+
+  open("http://github.com/api/v2/yaml/issues/search/mxcl/homebrew/open/"+name) do |f|
+    YAML::load(f.read)['issues'].each do |issue|
+      issues << 'http://github.com/mxcl/homebrew/issues/#issue/%s' % issue['number']
+    end
+  end
+
+  issues
+rescue
+  []
+end
 
 def clean f
   Cleaner.new f
@@ -232,15 +254,6 @@ def clean f
       d.rmdir
     end
   end
-end
-
-
-def expand_deps ff
-  deps = []
-  ff.deps.collect do |f|
-    deps += expand_deps(Formula.factory(f))
-  end
-  deps << ff
 end
 
 
@@ -474,6 +487,12 @@ def gcc_build
   `/usr/bin/gcc-4.2 -v 2>&1` =~ /build (\d{4,})/
   if $1
     $1.to_i 
+  elsif system "/usr/bin/which gcc"
+    # Xcode 3.0 didn't come with gcc-4.2
+    # We can't change the above regex to use gcc because the version numbers
+    # are different and thus, not useful.
+    # FIXME I bet you 20 quid this causes a side effect — magic values tend to
+    401
   else
     nil
   end
