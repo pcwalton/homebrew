@@ -245,13 +245,28 @@ rescue
   []
 end
 
+def check_outdated name
+  require 'formula'
+  
+  begin
+    f = Formula.factory name
+    puts name unless f.installed?
+  rescue FormulaUnavailableError
+    return
+  end
+end
+
+
 def cleanup name
   require 'formula'
 
-  f = Formula.factory name
-
-  # we can't tell which one to keep in this circumstance
-  raise "The most recent version of #{name} is not installed" unless f.installed?
+  begin
+    f = Formula.factory name
+    # we can't tell which one to keep in this circumstance
+    raise "The most recent version of #{name} is not installed" unless f.installed?
+  rescue FormulaUnavailableError
+    return
+  end
 
   if f.prefix.parent.directory?
     kids = f.prefix.parent.children
