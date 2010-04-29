@@ -55,6 +55,7 @@ class Keg <Pathname
       when /^pkgconfig/ then :mkpath
       when /^php/ then :mkpath
       when /^perl5/ then :mkpath
+      when /^ocaml/ then :mkpath
       end
     end
 

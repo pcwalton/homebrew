@@ -8,13 +8,14 @@ class ObjectiveCaml <Formula
   aka :ocaml, 'o-caml'
 
   def install
-    system "./configure --prefix #{prefix}"
+    system "./configure --prefix #{HOMEBREW_PREFIX}"
+    #fakedirs="PREFIX=#{HOMEBREW_PREFIX} BINDIR=#{HOMEBREW_PREFIX}/bin LIBDIR=#{HOMEBREW_PREFIX}/lib/ocaml"
     system "make world"
     # 'world' can be built in parallel, but the other targets have problems
     ENV.deparallelize
     system "make opt"
     system "make opt.opt"
-    system "make install"
+    system "make install PREFIX=#{prefix}"
   end
 
   # note it indeed seems necessary to clean everything

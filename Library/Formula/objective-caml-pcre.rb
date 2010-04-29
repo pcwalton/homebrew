@@ -12,7 +12,8 @@ class ObjectiveCamlPcre <Formula
   def install
     ENV.deparallelize
     system "make"
-    system "make install"
+    system "mkdir -p #{prefix}/lib/ocaml/site-lib"
+    system "make install OCAMLFIND_INSTFLAGS=\"-destdir #{prefix}/lib/ocaml/site-lib\""
   end
 
 end

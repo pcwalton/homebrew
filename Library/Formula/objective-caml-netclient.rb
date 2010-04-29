@@ -14,6 +14,8 @@ class ObjectiveCamlNetclient <Formula
     system "./configure"
     system "make all"
     system "make opt"
+    ENV['OCAMLFIND_DESTDIR'] = "#{prefix}/lib/ocaml/site-lib"
+    system "mkdir -p #{prefix}/lib/ocaml/site-lib"
     system "make install"
   end
 
