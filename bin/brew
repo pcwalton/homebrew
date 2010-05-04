@@ -242,6 +242,11 @@ begin
     else
       ARGV.named.each { |name| cleanup name}
     end
+    
+  when 'outdated'
+    HOMEBREW_CELLAR.children.each do |rack|
+      check_outdated(rack.basename.to_s) if rack.directory?          
+    end
 
   when 'install'
     check_for_blacklisted_formula(ARGV.named)

@@ -1,10 +1,10 @@
 require 'formula'
 
 class Scala <Formula
-  @homepage='http://www.scala-lang.org/'
-  @url='http://www.scala-lang.org/downloads/distrib/files/scala-2.7.7.final.tgz'
-  @version='2.7.7'
-  @md5='5d2294d5aab72fec869c0ba666d28b7e'
+  homepage 'http://www.scala-lang.org/'
+  url "http://www.scala-lang.org/downloads/distrib/files/scala-2.8.0.Beta1-prerelease.tgz"
+  version '2.8.0.b1'
+  md5 '3c139a36abf270be26103a5ebdd742b6'
 
   def install
     man1.install Dir['man/man1/*']

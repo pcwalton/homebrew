@@ -12,6 +12,8 @@ class ObjectiveCamlJsonStatic <Formula
   def install
     ENV.deparallelize
     system "make"
+    ENV['OCAMLFIND_DESTDIR'] = "#{prefix}/lib/ocaml/site-lib"
+    system "mkdir -p #{prefix}/lib/ocaml/site-lib"
     system "make install"
   end
 
